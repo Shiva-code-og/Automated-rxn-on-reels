@@ -1215,3 +1215,62 @@ input:checked + .switch-sm .slider:before {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.15);
 }
+
+/* Friends Selection List Styles */
+.friends-selector-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    max-height: 150px;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+}
+
+.friend-select-pill {
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-glass);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    color: var(--text-muted);
+}
+
+.friend-select-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+}
+
+.friend-select-pill.selected {
+    background: rgba(214, 41, 118, 0.15);
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 0 10px rgba(214, 41, 118, 0.15);
+}
+
+.friend-select-pill .avatar-icon {
+    font-size: 0.75rem;
+    transition: var(--transition);
+}
+
+.friend-select-pill.selected .avatar-icon {
+    color: var(--primary);
+}
+
+.friends-loading-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    padding: 10px;
+    width: 100%;
+    text-align: center;
+}
+

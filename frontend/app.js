@@ -16,7 +16,9 @@ let appState = {
         gemini_api_key: ''
     },
     // Available default emojis for the quick-select list
-    defaultEmojis: ['❤️', '🔥', '😂', '😮', '👏', '🙌', '😍', '👍', '💯']
+    defaultEmojis: ['❤️', '🔥', '😂', '😮', '👏', '🙌', '😍', '👍', '💯'],
+    // Fetched friend list from DMs
+    friends: []
 };
 
 // DOM Elements
@@ -52,6 +54,7 @@ const btnCheckNow = document.getElementById('btn-check-now');
 const configForm = document.getElementById('config-form');
 const specificUsernamesGroup = document.getElementById('specific-usernames-group');
 const specificUsernamesInput = document.getElementById('specific-usernames');
+const friendsSelectorContainer = document.getElementById('friends-selector-container');
 const useRandomEmojiInput = document.getElementById('use-random-emoji');
 const pollIntervalInput = document.getElementById('poll-interval');
 const intervalDisplay = document.getElementById('interval-display');
@@ -73,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
     fetchStatus().then(() => {
         if (appState.status === 'connected') {
-            fetchConfig();
+            fetchConfig().then(() => fetchFriends());
             fetchLogs();
         }
     });
@@ -173,7 +176,7 @@ async function fetchStatus() {
         
         // If status just shifted to connected, load settings & logs
         if (oldStatus !== 'connected' && appState.status === 'connected') {
-            fetchConfig();
+            fetchConfig().then(() => fetchFriends());
             fetchLogs();
         }
     } catch (err) {
@@ -192,7 +195,13 @@ async function fetchConfig() {
         document.querySelector(`input[name="react_target"][value="${data.react_target}"]`).checked = true;
         toggleTargetSelection(data.react_target);
         
+        // Sync hidden input with saved value
         specificUsernamesInput.value = data.specific_usernames;
+        
+        // Update friend selector pill states if friends are already loaded
+        if (appState.friends.length > 0) {
+            updateFriendsSelectorSelection();
+        }
         useRandomEmojiInput.checked = data.use_random_emoji;
         pollIntervalInput.value = data.poll_interval;
         intervalDisplay.textContent = `${data.poll_interval} mins`;
@@ -251,7 +260,7 @@ async function handleLogin(e) {
         } else {
             appState.status = 'connected';
             appState.username = payload.username;
-            fetchConfig();
+            fetchConfig().then(() => fetchFriends());
             fetchLogs();
         }
     } catch (err) {
@@ -411,7 +420,7 @@ async function saveConfiguration(e) {
     
     const payload = {
         react_target: target,
-        specific_usernames: specificUsernamesInput.value.trim(),
+        specific_usernames: (specificUsernamesInput.value || '').trim(),
         selected_emojis: selectedEmojis,
         use_random_emoji: useRandomEmojiInput.checked,
         poll_interval: parseInt(pollIntervalInput.value),
@@ -522,10 +531,12 @@ function close2faModal() {
 function toggleTargetSelection(value) {
     if (value === 'specific') {
         specificUsernamesGroup.classList.add('active');
-        specificUsernamesInput.required = true;
+        // Re-fetch friends when switching to specific list if they haven't been loaded yet
+        if (appState.friends.length === 0 && appState.status === 'connected') {
+            fetchFriends();
+        }
     } else {
         specificUsernamesGroup.classList.remove('active');
-        specificUsernamesInput.required = false;
     }
 }
 
@@ -724,5 +735,99 @@ function renderLogs() {
         `;
         
         logListContainer.appendChild(item);
+    });
+}
+
+// ------------------- FRIEND SELECTOR LOGIC -------------------
+
+// Fetch recent DM friends from backend
+async function fetchFriends() {
+    if (appState.status !== 'connected') return;
+    
+    try {
+        friendsSelectorContainer.innerHTML = '<span class="friends-loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Loading friends from DMs...</span>';
+        
+        const res = await fetch('/api/friends');
+        const data = await res.json();
+        appState.friends = data;
+        renderFriendsSelector(data);
+    } catch (err) {
+        console.error('Error fetching friends:', err);
+        friendsSelectorContainer.innerHTML = '<span class="friends-loading-text"><i class="fa-solid fa-circle-exclamation"></i> Could not load friends. Connect your account first.</span>';
+    }
+}
+
+// Render clickable friend pills into the selector container
+function renderFriendsSelector(friends) {
+    friendsSelectorContainer.innerHTML = '';
+    
+    if (!friends || friends.length === 0) {
+        friendsSelectorContainer.innerHTML = '<span class="friends-loading-text"><i class="fa-solid fa-user-slash"></i> No recent DM friends found.</span>';
+        return;
+    }
+    
+    // Parse currently saved selected usernames
+    const savedUsernames = (specificUsernamesInput.value || '').split(',').map(u => u.trim().toLowerCase()).filter(Boolean);
+    
+    friends.forEach(friend => {
+        const isSelected = savedUsernames.includes(friend.username.toLowerCase());
+        
+        const pill = document.createElement('div');
+        pill.className = `friend-select-pill ${isSelected ? 'selected' : ''}`;
+        pill.dataset.username = friend.username;
+        
+        const displayName = friend.full_name ? `${friend.full_name}` : friend.username;
+        pill.innerHTML = `
+            <i class="avatar-icon ${isSelected ? 'fa-solid fa-check' : 'fa-solid fa-user-astronaut'}"></i>
+            <span>${displayName}</span>
+        `;
+        pill.title = `@${friend.username}`;
+        
+        pill.addEventListener('click', () => {
+            toggleFriendSelection(friend.username, pill);
+        });
+        
+        friendsSelectorContainer.appendChild(pill);
+    });
+}
+
+// Toggle a friend's selected state and update the hidden input
+function toggleFriendSelection(username, pill) {
+    let selectedUsernames = (specificUsernamesInput.value || '').split(',').map(u => u.trim()).filter(Boolean);
+    const icon = pill.querySelector('.avatar-icon');
+    
+    if (pill.classList.contains('selected')) {
+        // Deselect
+        pill.classList.remove('selected');
+        icon.className = 'avatar-icon fa-solid fa-user-astronaut';
+        selectedUsernames = selectedUsernames.filter(u => u.toLowerCase() !== username.toLowerCase());
+    } else {
+        // Select
+        pill.classList.add('selected');
+        icon.className = 'avatar-icon fa-solid fa-check';
+        if (!selectedUsernames.map(u => u.toLowerCase()).includes(username.toLowerCase())) {
+            selectedUsernames.push(username);
+        }
+    }
+    
+    specificUsernamesInput.value = selectedUsernames.join(', ');
+}
+
+// Sync pill selection states with the current config value
+function updateFriendsSelectorSelection() {
+    const savedUsernames = (specificUsernamesInput.value || '').split(',').map(u => u.trim().toLowerCase()).filter(Boolean);
+    
+    const pills = friendsSelectorContainer.querySelectorAll('.friend-select-pill');
+    pills.forEach(pill => {
+        const username = (pill.dataset.username || '').toLowerCase();
+        const icon = pill.querySelector('.avatar-icon');
+        
+        if (savedUsernames.includes(username)) {
+            pill.classList.add('selected');
+            if (icon) icon.className = 'avatar-icon fa-solid fa-check';
+        } else {
+            pill.classList.remove('selected');
+            if (icon) icon.className = 'avatar-icon fa-solid fa-user-astronaut';
+        }
     });
 }

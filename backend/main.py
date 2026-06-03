@@ -202,6 +202,27 @@ def clear_logs_history():
     print("API Logs: Database logs cleared successfully.")
     return {"status": "success", "message": "Reaction logs cleared."}
 
+@app.get("/api/friends")
+def get_recent_friends():
+    print("API Friends: Fetching recent chat partners...")
+    if instagram_worker.status != "connected":
+        print("API Friends: Worker not connected to Instagram.")
+        return []
+    try:
+        threads = instagram_worker.cl.direct_threads(amount=20)
+        friends = []
+        seen = set()
+        for thread in threads:
+            for user in thread.users:
+                if user.username not in seen and user.username.lower() != instagram_worker.username.lower():
+                    friends.append({"username": user.username, "full_name": user.full_name})
+                    seen.add(user.username)
+        print(f"API Friends: Found {len(friends)} unique recent friends.")
+        return friends
+    except Exception as e:
+        print(f"Error fetching friends: {e}")
+        return []
+
 # Serve Frontend static assets
 if os.path.exists(FRONTEND_DIR):
     app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")

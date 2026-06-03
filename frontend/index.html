@@ -179,9 +179,12 @@
 
                             <!-- Specific Friends List Input -->
                             <div class="form-group fade-in-section" id="specific-usernames-group">
-                                <label for="specific-usernames"><i class="fa-regular fa-clipboard-user"></i> Targeted Usernames</label>
-                                <textarea id="specific-usernames" placeholder="friend1_username, friend2_username, friend3..." rows="2"></textarea>
-                                <p class="input-help">Separate multiple usernames with commas.</p>
+                                <label><i class="fa-regular fa-clipboard-user"></i> Select Friends to Target</label>
+                                <input type="hidden" id="specific-usernames" value="">
+                                <div id="friends-selector-container" class="friends-selector-grid">
+                                    <span class="friends-loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Loading friends from DMs...</span>
+                                </div>
+                                <p class="input-help">Click on friends to select/deselect. Only reels from selected friends will be reacted to.</p>
                             </div>
 
                             <!-- Emoji Selection Grid -->
