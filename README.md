@@ -10,6 +10,7 @@ AutoReact is a modern, premium web-based dashboard and automated worker that mon
 - **💬 Comments Processing:** Automatically fetches 20–30 comments per Reel using the Instagram API to construct an accurate sentiment profile.
 - **🛡️ Secure API Key Management:** Prompts the user for their Gemini API key via the dashboard and writes it directly to a local, secure `.env` file. Keys are masked in the UI (`••••••••`) and never exposed in browser requests or committed to git.
 - **🎨 Premium Glassmorphism Dashboard:** Responsive, beautifully designed dark-mode web interface to connect your Instagram account, track worker status, view real-time reaction logs, and adjust settings.
+- **🎯 Targeted Reactions (Friend Selector):** Dynamically fetches your recent chat partners from DMs into an interactive, clickable grid so you can selectively target only specific friends for automated reactions.
 - **⚡ Smart Fallback:** If Gemini is disabled or the API key is not configured, the system automatically falls back to an advanced local keyword-based sentiment analyzer.
 - **🔕 Quiet Terminal Logging:** Configured to prevent uvicorn access log spamming, so you only see actual Reel checks and reaction events in the console.
 
