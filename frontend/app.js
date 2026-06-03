@@ -466,12 +466,23 @@ let clearConfirmTimeout = null;
 
 // Clear log history
 async function clearLogsHistory() {
-    if (!confirm("Are you sure you want to clear all reaction logs from the database?")) {
+    const btn = document.getElementById('btn-clear-logs');
+    
+    if (!btn.classList.contains('confirm-state')) {
+        btn.classList.add('confirm-state');
+        btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Confirm?';
+        btn.title = "Click again to clear logs";
+        
+        clearConfirmTimeout = setTimeout(() => {
+            btn.classList.remove('confirm-state');
+            btn.innerHTML = '<i class="fa-regular fa-trash-can"></i> Clear';
+            btn.title = "Clear logs from database";
+        }, 3000);
         return;
     }
     
-    const btn = document.getElementById('btn-clear-logs');
-    const originalHTML = btn.innerHTML;
+    clearTimeout(clearConfirmTimeout);
+    btn.classList.remove('confirm-state');
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Clearing...';
     
@@ -488,7 +499,8 @@ async function clearLogsHistory() {
         alert("Error connecting to server. Could not clear logs.");
     } finally {
         btn.disabled = false;
-        btn.innerHTML = originalHTML;
+        btn.innerHTML = '<i class="fa-regular fa-trash-can"></i> Clear';
+        btn.title = "Clear logs from database";
     }
 }
 
