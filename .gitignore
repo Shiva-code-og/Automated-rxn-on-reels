@@ -1,0 +1,15 @@
+# Local configuration and credentials
+.env
+data.db
+session.json
+
+# Python caching
+__pycache__/
+backend/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Operating system files
+Thumbs.db
+Desktop.ini

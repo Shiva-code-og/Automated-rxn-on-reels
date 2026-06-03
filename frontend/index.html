@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoReact - Instagram Reels Automated Reaction Tool</title>
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main Style sheet -->
+    <link rel="stylesheet" href="/frontend/style.css">
+</head>
+<body>
+    <!-- Background glowing ambient spots -->
+    <div class="glow-bg">
+        <div class="glow-sphere sphere-1"></div>
+        <div class="glow-sphere sphere-2"></div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="app-container">
+
+        <!-- 1. LOGIN SCREEN -->
+        <div id="login-screen" class="screen active">
+            <div class="login-card">
+                <div class="logo-area">
+                    <div class="logo-icon">
+                        <i class="fa-brands fa-instagram"></i>
+                    </div>
+                    <h1>AutoReact</h1>
+                    <p>Reels Automator</p>
+                </div>
+                
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username"><i class="fa-regular fa-user"></i> Instagram Username</label>
+                        <input type="text" id="username" placeholder="e.g. your_username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password"><i class="fa-regular fa-key"></i> Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                            <button type="button" id="toggle-password" class="password-toggle">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="login-warning">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Using automated tools may trigger Instagram's security alerts. Make sure to use a safe check interval (5+ minutes).</span>
+                    </div>
+
+                    <button type="submit" id="login-btn" class="btn btn-primary btn-block">
+                        <span class="btn-text">Connect Account</span>
+                        <div class="spinner"></div>
+                    </button>
+                </form>
+                
+                <div id="login-error" class="error-box">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                    <span id="error-message">Invalid credentials, please try again.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 2FA CODE MODAL -->
+        <div id="twofactor-modal" class="modal-overlay">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <h2>Two-Factor Auth</h2>
+                    <p>Enter the 6-digit verification code from your authenticator app to complete connection.</p>
+                </div>
+                <form id="twofactor-form">
+                    <div class="form-group">
+                        <input type="text" id="twofactor-code" placeholder="123 456" maxlength="6" pattern="\d{6}" required autocomplete="one-time-code">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="cancel-2fa" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" id="submit-2fa" class="btn btn-primary">
+                            <span class="btn-text">Verify Code</span>
+                            <div class="spinner"></div>
+                        </button>
+                    </div>
+                </form>
+                <div id="twofactor-error" class="error-box mt-3">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                    <span id="twofactor-error-message">Invalid code. Please try again.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. DASHBOARD SCREEN -->
+        <div id="dashboard-screen" class="screen">
+            
+            <!-- Navbar Header -->
+            <header class="app-header">
+                <div class="header-logo">
+                    <i class="fa-brands fa-instagram logo-gradient-icon"></i>
+                    <h2>AutoReact <span class="badge">Dashboard</span></h2>
+                </div>
+                <div class="user-profile">
+                    <div class="profile-avatar">
+                        <i class="fa-solid fa-user-astronaut"></i>
+                    </div>
+                    <div class="profile-details">
+                        <span class="profile-username" id="display-username">@username</span>
+                        <span class="profile-status"><i class="fa-solid fa-circle status-dot connected"></i> Connected</span>
+                    </div>
+                    <button id="logout-btn" class="btn btn-icon-only text-danger" title="Disconnect Account">
+                        <i class="fa-solid fa-power-off"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid">
+                
+                <!-- COLUMN 1: CONTROL & SETTINGS -->
+                <div class="grid-col">
+                    
+                    <!-- Worker Status & Controls Card -->
+                    <div class="glass-card glow-card">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fa-solid fa-circle-nodes"></i></div>
+                            <h3>Control Center</h3>
+                        </div>
+                        <div class="card-body control-panel">
+                            <div class="worker-state-box">
+                                <div class="state-indicator">
+                                    <div id="worker-status-pulse" class="pulse-indicator idle"></div>
+                                    <div>
+                                        <h4 id="worker-status-title">Monitoring Stopped</h4>
+                                        <p id="worker-status-desc">Automated reactions are currently paused.</p>
+                                    </div>
+                                </div>
+                                <div class="toggle-control">
+                                    <label class="switch">
+                                        <input type="checkbox" id="worker-toggle">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="worker-actions">
+                                <button id="btn-start" class="btn btn-success"><i class="fa-solid fa-play"></i> Start Monitor</button>
+                                <button id="btn-check-now" class="btn btn-secondary"><i class="fa-solid fa-bolt"></i> Check Now</button>
+                                <button id="btn-stop" class="btn btn-danger" disabled><i class="fa-solid fa-stop"></i> Stop Monitor</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Panel Card -->
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fa-solid fa-sliders"></i></div>
+                            <h3>Reaction Settings</h3>
+                        </div>
+                        <form id="config-form" class="card-body">
+                            
+                            <!-- Target Option -->
+                            <div class="form-group">
+                                <label><i class="fa-solid fa-user-group"></i> React to Incoming Reels From</label>
+                                <div class="radio-group">
+                                    <label class="radio-container">
+                                        <input type="radio" name="react_target" value="all" checked>
+                                        <span class="radio-checkmark"></span>
+                                        <span class="radio-label">All Friends</span>
+                                    </label>
+                                    <label class="radio-container">
+                                        <input type="radio" name="react_target" value="specific">
+                                        <span class="radio-checkmark"></span>
+                                        <span class="radio-label">Specific List</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Specific Friends List Input -->
+                            <div class="form-group fade-in-section" id="specific-usernames-group">
+                                <label for="specific-usernames"><i class="fa-regular fa-clipboard-user"></i> Targeted Usernames</label>
+                                <textarea id="specific-usernames" placeholder="friend1_username, friend2_username, friend3..." rows="2"></textarea>
+                                <p class="input-help">Separate multiple usernames with commas.</p>
+                            </div>
+
+                            <!-- Emoji Selection Grid -->
+                            <div class="form-group">
+                                <label><i class="fa-regular fa-face-smile-wink"></i> Reaction Emojis</label>
+                                <div class="emoji-selector-grid" id="emoji-badge-container">
+                                    <!-- Emojis populated dynamically by JS -->
+                                </div>
+                                <div class="custom-emoji-input mt-2">
+                                    <input type="text" id="add-custom-emoji" placeholder="Add custom emoji (e.g. 🙌)" maxlength="2">
+                                    <button type="button" id="btn-add-emoji" class="btn btn-secondary btn-sm">Add</button>
+                                </div>
+                            </div>
+
+                            <!-- Randomize Reactions Checkbox -->
+                            <div class="form-group inline-flex justify-between items-center">
+                                <div class="flex-column">
+                                    <label for="use-random-emoji" class="mb-0 pointer"><i class="fa-solid fa-shuffle"></i> Randomize Reactions</label>
+                                    <p class="input-help mb-0">Selects a random emoji from the list instead of the first one.</p>
+                                </div>
+                                <label class="switch switch-sm">
+                                    <input type="checkbox" id="use-random-emoji">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+
+                            <!-- Gemini AI Analysis Section -->
+                            <div class="form-group inline-flex justify-between items-center mt-3" style="border-top: 1px solid var(--border-glass); padding-top: 15px;">
+                                <div class="flex-column" style="max-width: 80%;">
+                                    <label for="use-gemini" class="mb-0 pointer"><i class="fa-solid fa-brain"></i> Enable Gemini AI Analysis</label>
+                                    <p class="input-help mb-0">Use Gemini to analyze 20-30 comments for intelligent reaction emoji selection.</p>
+                                </div>
+                                <label class="switch switch-sm">
+                                    <input type="checkbox" id="use-gemini">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+
+                            <!-- Gemini API Key Input -->
+                            <div class="form-group fade-in-section" id="gemini-api-key-group">
+                                <label for="gemini-api-key"><i class="fa-solid fa-key"></i> Gemini API Key</label>
+                                <div class="password-wrapper">
+                                    <input type="password" id="gemini-api-key" placeholder="AIzaSy...">
+                                    <button type="button" id="toggle-gemini-key" class="password-toggle">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </button>
+                                </div>
+                                <p class="input-help">Provide your Gemini API key to enable AI-powered sentiment analysis.</p>
+                            </div>
+
+                            <!-- Poll Interval Slider -->
+                            <div class="form-group">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="mb-0"><i class="fa-solid fa-hourglass-half"></i> Polling Interval</label>
+                                    <span id="interval-display" class="value-badge">5 mins</span>
+                                </div>
+                                <input type="range" id="poll-interval" min="1" max="30" value="5" class="range-slider">
+                                <div class="flex justify-between input-help">
+                                    <span>Fast (1m)</span>
+                                    <span>Safe (5m+)</span>
+                                    <span>Relaxed (30m)</span>
+                                </div>
+                            </div>
+
+                            <!-- Form Status and Submit -->
+                            <div id="config-status" class="alert-box success">
+                                <i class="fa-solid fa-circle-check"></i> Settings saved successfully!
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <i class="fa-regular fa-floppy-disk"></i> Save Settings
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+
+                <!-- COLUMN 2: ACTIVITY LOG -->
+                <div class="grid-col">
+                    
+                    <div class="glass-card scroll-card">
+                        <div class="card-header justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="card-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                                <h3>Reaction Activity Log</h3>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="total-reacted-badge" class="badge">0 reacted</span>
+                                <button id="btn-clear-logs" class="btn btn-secondary btn-sm text-danger" title="Clear logs from database">
+                                    <i class="fa-regular fa-trash-can"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body log-container" id="log-list-container">
+                            <!-- Logs dynamically loaded -->
+                            <div class="empty-log-state">
+                                <i class="fa-solid fa-satellite-dish"></i>
+                                <h4>No Activity Logged</h4>
+                                <p>Reels sent by your friends will show up here as soon as the background worker detects and reacts to them.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+    
+    <script src="/frontend/app.js"></script>
+</body>
+</html>
