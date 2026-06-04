@@ -92,7 +92,9 @@ const btnClearLogs = document.getElementById('btn-clear-logs');
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
-    const token = localStorage.getItem('auto_react_token');\n    if (!token) return;\n    fetchStatus().then(() => {
+    const token = localStorage.getItem('auto_react_token');
+    if (!token) return;
+    fetchStatus().then(() => {
         if (appState.status === 'connected') {
             fetchConfig().then(() => fetchFriends());
             fetchLogs();
@@ -300,7 +302,8 @@ async function handleTwoFactorSubmit(e) {
     twoFactorError.style.display = 'none';
     
     const payload = {
-        code: twoFactorCodeInput.value.trim(),\n        username: appState.username
+        code: twoFactorCodeInput.value.trim(),
+        username: appState.username
     };
     
     try {
@@ -316,7 +319,8 @@ async function handleTwoFactorSubmit(e) {
             throw new Error(data.detail || "Verification failed.");
         }
         
-        localStorage.setItem('auto_react_token', data.token);\n        twoFactorModal.classList.remove('active');
+        localStorage.setItem('auto_react_token', data.token);
+        twoFactorModal.classList.remove('active');
         appState.status = 'connected';
         await fetchStatus();
     } catch (err) {
@@ -351,7 +355,8 @@ async function handleLogout() {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
     
     try {
-        await authFetch('/api/logout', { method: 'POST' });\n        localStorage.removeItem('auto_react_token');
+        await authFetch('/api/logout', { method: 'POST' });
+        localStorage.removeItem('auto_react_token');
         appState.status = 'idle';
         appState.username = '';
         appState.is_running = false;
@@ -554,7 +559,7 @@ function open2faModal() {
 }
 
 function close2faModal() {
-    localStorage.setItem('auto_react_token', data.token);\n        twoFactorModal.classList.remove('active');
+    twoFactorModal.classList.remove('active');
     appState.status = 'idle';
     updateUIState();
 }
