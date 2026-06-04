@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data.db")
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data_v2.db")
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -12,26 +12,31 @@ def init_db():
     with get_db_connection() as conn:
         cursor = conn.cursor()
         
-        # Create settings table
+        # Create settings table (user-specific)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS settings (
-                key TEXT PRIMARY KEY,
-                value TEXT
+                user_id TEXT,
+                key TEXT,
+                value TEXT,
+                PRIMARY KEY (user_id, key)
             )
         """)
         
-        # Create processed messages table to avoid double-reacting
+        # Create processed messages table (user-specific)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS processed_messages (
-                message_id TEXT PRIMARY KEY,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                user_id TEXT,
+                message_id TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, message_id)
             )
         """)
         
-        # Create reaction logs table
+        # Create reaction logs table (user-specific)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS reaction_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                 sender_username TEXT,
                 thread_title TEXT,
@@ -40,13 +45,21 @@ def init_db():
                 reel_url TEXT
             )
         """)
+        
+        # Create instagram sessions table for saving instagrapi session dicts
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS instagram_sessions (
+                user_id TEXT PRIMARY KEY,
+                session_data TEXT
+            )
+        """)
         conn.commit()
 
-def get_setting(key: str, default: str = None) -> str:
+def get_setting(user_id: str, key: str, default: str = None) -> str:
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT value FROM settings WHERE key = ?", (key,))
+            cursor.execute("SELECT value FROM settings WHERE user_id = ? AND key = ?", (user_id, key))
             row = cursor.fetchone()
             if row:
                 return row["value"]
@@ -54,18 +67,18 @@ def get_setting(key: str, default: str = None) -> str:
     except Exception:
         return default
 
-def save_setting(key: str, value: str):
+def save_setting(user_id: str, key: str, value: str):
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, str(value)))
+        cursor.execute("INSERT OR REPLACE INTO settings (user_id, key, value) VALUES (?, ?, ?)", (user_id, key, str(value)))
         conn.commit()
 
-def get_all_settings():
+def get_all_settings(user_id: str):
     settings = {}
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT key, value FROM settings")
+            cursor.execute("SELECT key, value FROM settings WHERE user_id = ?", (user_id,))
             rows = cursor.fetchall()
             for row in rows:
                 settings[row["key"]] = row["value"]
@@ -73,37 +86,37 @@ def get_all_settings():
         pass
     return settings
 
-def is_message_processed(message_id: str) -> bool:
+def is_message_processed(user_id: str, message_id: str) -> bool:
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT 1 FROM processed_messages WHERE message_id = ?", (message_id,))
+            cursor.execute("SELECT 1 FROM processed_messages WHERE user_id = ? AND message_id = ?", (user_id, message_id))
             return cursor.fetchone() is not None
     except Exception:
         return False
 
-def mark_message_processed(message_id: str):
+def mark_message_processed(user_id: str, message_id: str):
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("INSERT OR IGNORE INTO processed_messages (message_id) VALUES (?)", (message_id,))
+            cursor.execute("INSERT OR IGNORE INTO processed_messages (user_id, message_id) VALUES (?, ?)", (user_id, message_id))
             conn.commit()
     except Exception:
         pass
 
-def add_log(sender_username: str, thread_title: str, message_text: str, reaction_emoji: str, reel_url: str):
+def add_log(user_id: str, sender_username: str, thread_title: str, message_text: str, reaction_emoji: str, reel_url: str):
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO reaction_logs (sender_username, thread_title, message_text, reaction_emoji, reel_url)
-                VALUES (?, ?, ?, ?, ?)
-            """, (sender_username, thread_title, message_text, reaction_emoji, reel_url))
+                INSERT INTO reaction_logs (user_id, sender_username, thread_title, message_text, reaction_emoji, reel_url)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (user_id, sender_username, thread_title, message_text, reaction_emoji, reel_url))
             conn.commit()
     except Exception as e:
         print(f"Error adding log: {e}")
 
-def get_logs(limit: int = 100):
+def get_logs(user_id: str, limit: int = 100):
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -111,23 +124,48 @@ def get_logs(limit: int = 100):
                 SELECT id, datetime(timestamp, 'localtime') as local_timestamp, 
                        sender_username, thread_title, message_text, reaction_emoji, reel_url 
                 FROM reaction_logs 
+                WHERE user_id = ?
                 ORDER BY timestamp DESC 
                 LIMIT ?
-            """, (limit,))
+            """, (user_id, limit))
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
     except Exception as e:
         print(f"Error fetching logs: {e}")
         return []
 
-def clear_logs():
+def clear_logs(user_id: str):
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM reaction_logs")
+            cursor.execute("DELETE FROM reaction_logs WHERE user_id = ?", (user_id,))
             conn.commit()
     except Exception:
         pass
+
+def get_instagram_session(user_id: str) -> str:
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT session_data FROM instagram_sessions WHERE user_id = ?", (user_id,))
+            row = cursor.fetchone()
+            if row:
+                return row["session_data"]
+            return None
+    except Exception:
+        return None
+
+def save_instagram_session(user_id: str, session_data: str):
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR REPLACE INTO instagram_sessions (user_id, session_data) VALUES (?, ?)", (user_id, session_data))
+        conn.commit()
+
+def delete_instagram_session(user_id: str):
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM instagram_sessions WHERE user_id = ?", (user_id,))
+        conn.commit()
 
 # Initialize database on import
 init_db()

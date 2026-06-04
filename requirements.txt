@@ -3,3 +3,4 @@ uvicorn
 instagrapi
 pydantic
 python-dotenv
+PyJWT

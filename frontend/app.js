@@ -21,6 +21,24 @@ let appState = {
     friends: []
 };
 
+
+async function authFetch(url, options = {}) {
+    const token = localStorage.getItem('auto_react_token');
+    if (!options.headers) options.headers = {};
+    if (token) {
+        options.headers['Authorization'] = 'Bearer ' + token;
+    }
+    const res = await fetch(url, options);
+    if (res.status === 401) {
+        localStorage.removeItem('auto_react_token');
+        appState.status = 'idle';
+        appState.username = '';
+        updateUIState();
+        throw new Error('Session expired. Please log in again.');
+    }
+    return res;
+}
+
 // DOM Elements
 const loginScreen = document.getElementById('login-screen');
 const dashboardScreen = document.getElementById('dashboard-screen');
@@ -74,7 +92,7 @@ const btnClearLogs = document.getElementById('btn-clear-logs');
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
-    fetchStatus().then(() => {
+    const token = localStorage.getItem('auto_react_token');\n    if (!token) return;\n    fetchStatus().then(() => {
         if (appState.status === 'connected') {
             fetchConfig().then(() => fetchFriends());
             fetchLogs();
@@ -164,7 +182,7 @@ function initEventListeners() {
 // Fetch current backend status
 async function fetchStatus() {
     try {
-        const res = await fetch('/api/status');
+        const res = await authFetch('/api/status');
         const data = await res.json();
         
         const oldStatus = appState.status;
@@ -187,7 +205,7 @@ async function fetchStatus() {
 // Fetch Configurations
 async function fetchConfig() {
     try {
-        const res = await fetch('/api/config');
+        const res = await authFetch('/api/config');
         const data = await res.json();
         appState.config = data;
         
@@ -220,7 +238,7 @@ async function fetchConfig() {
 // Fetch Log entries
 async function fetchLogs() {
     try {
-        const res = await fetch('/api/logs');
+        const res = await authFetch('/api/logs');
         const data = await res.json();
         appState.logs = data;
         renderLogs();
@@ -256,8 +274,10 @@ async function handleLogin(e) {
         
         if (data.status === '2fa_needed') {
             appState.status = '2fa_needed';
+            appState.username = payload.username;
             open2faModal();
         } else {
+            localStorage.setItem('auto_react_token', data.token);
             appState.status = 'connected';
             appState.username = payload.username;
             fetchConfig().then(() => fetchFriends());
@@ -280,7 +300,7 @@ async function handleTwoFactorSubmit(e) {
     twoFactorError.style.display = 'none';
     
     const payload = {
-        code: twoFactorCodeInput.value.trim()
+        code: twoFactorCodeInput.value.trim(),\n        username: appState.username
     };
     
     try {
@@ -296,7 +316,7 @@ async function handleTwoFactorSubmit(e) {
             throw new Error(data.detail || "Verification failed.");
         }
         
-        twoFactorModal.classList.remove('active');
+        localStorage.setItem('auto_react_token', data.token);\n        twoFactorModal.classList.remove('active');
         appState.status = 'connected';
         await fetchStatus();
     } catch (err) {
@@ -331,7 +351,7 @@ async function handleLogout() {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
     
     try {
-        await fetch('/api/logout', { method: 'POST' });
+        await authFetch('/api/logout', { method: 'POST' });\n        localStorage.removeItem('auto_react_token');
         appState.status = 'idle';
         appState.username = '';
         appState.is_running = false;
@@ -352,7 +372,7 @@ async function handleLogout() {
 // Start worker
 async function startWorker() {
     try {
-        const res = await fetch('/api/control/start', { method: 'POST' });
+        const res = await authFetch('/api/control/start', { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
             appState.is_running = true;
@@ -368,7 +388,7 @@ async function startWorker() {
 // Stop worker
 async function stopWorker() {
     try {
-        await fetch('/api/control/stop', { method: 'POST' });
+        await authFetch('/api/control/stop', { method: 'POST' });
         appState.is_running = false;
         updateWorkerStatusUI();
     } catch (err) {
@@ -390,7 +410,7 @@ async function checkNow() {
     btnCheckNow.disabled = true;
     btnCheckNow.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking...';
     try {
-        const res = await fetch('/api/control/check-now', { method: 'POST' });
+        const res = await authFetch('/api/control/check-now', { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
             // Wait a moment then refresh logs
@@ -429,7 +449,7 @@ async function saveConfiguration(e) {
     };
     
     try {
-        const res = await fetch('/api/config', {
+        const res = await authFetch('/api/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -487,7 +507,7 @@ async function clearLogsHistory() {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Clearing...';
     
     try {
-        const res = await fetch('/api/logs/clear', { method: 'POST' });
+        const res = await authFetch('/api/logs/clear', { method: 'POST' });
         if (res.ok) {
             appState.logs = [];
             renderLogs();
@@ -534,7 +554,7 @@ function open2faModal() {
 }
 
 function close2faModal() {
-    twoFactorModal.classList.remove('active');
+    localStorage.setItem('auto_react_token', data.token);\n        twoFactorModal.classList.remove('active');
     appState.status = 'idle';
     updateUIState();
 }
@@ -759,7 +779,7 @@ async function fetchFriends() {
     try {
         friendsSelectorContainer.innerHTML = '<span class="friends-loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Loading friends from DMs...</span>';
         
-        const res = await fetch('/api/friends');
+        const res = await authFetch('/api/friends');
         const data = await res.json();
         appState.friends = data;
         renderFriendsSelector(data);

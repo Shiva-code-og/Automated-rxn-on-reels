@@ -1,6 +1,6 @@
 # Local configuration and credentials
 .env
-data.db
+*.db
 session.json
 
 # Python caching
