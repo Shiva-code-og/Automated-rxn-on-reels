@@ -1,0 +1,8 @@
+.env
+data.db
+session.json
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
