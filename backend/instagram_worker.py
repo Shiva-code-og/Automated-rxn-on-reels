@@ -171,22 +171,6 @@ class InstagramWorker:
         
         self.cl = Client()
         
-        # Set realistic device settings to prevent immediate logout/suspicion
-        self.cl.set_device({
-            "app_version": "269.0.0.18.75",
-            "android_version": "26",
-            "android_release": "8.0.0",
-            "dpi": "480dpi",
-            "resolution": "1080x1920",
-            "manufacturer": "Samsung",
-            "device": "SM-G930F",
-            "model": "herolte",
-            "cpu": "samsungexynos8890",
-            "version_code": "314665256"
-        })
-        self.cl.set_user_agent()
-        self.cl.set_timezone_offset(0)
-        
         # Clear any old cached session for this user
         database.delete_instagram_session(self.user_id)
         
@@ -196,10 +180,16 @@ class InstagramWorker:
             clean_sessionid = urllib.parse.unquote(sessionid.strip())
             
             safe_print(f"[{self.user_id}] Attempting session cookie login...")
-            self.cl.login_by_sessionid(clean_sessionid)
             
-            # Validate the session is actually working
-            self.cl.get_timeline_feed()
+            # Instead of login_by_sessionid (which calls get_timeline_feed and user_info which are heavily blocked on datacenter IPs),
+            # we manually set the cookie and test the DM endpoint directly.
+            self.cl.cookie_jar.set("sessionid", clean_sessionid, domain=".instagram.com")
+            self.cl.user_id = clean_sessionid.split(":")[0]
+            self.cl.authenticated = True
+            
+            # Validate the session by fetching 1 DM thread instead of the timeline
+            self.cl.direct_threads(1)
+
             
             self.save_session_to_db()
             self.status = "connected"
