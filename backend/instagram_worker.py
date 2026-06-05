@@ -14,6 +14,33 @@ from instagrapi.exceptions import (
     ChallengeUnknownStep,
     ChallengeError
 )
+
+# --- Monkey-patch instagrapi to handle "instagram://" scheme validation errors in Pydantic ---
+original_private_request = Client.private_request
+
+def patched_private_request(self, endpoint, data=None, params=None, *args, **kwargs):
+    res = original_private_request(self, endpoint, data=data, params=params, *args, **kwargs)
+    
+    # Recursively fix instagram:// URLs in the response dictionary to prevent Pydantic crashes
+    def fix_urls(obj):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, str) and v.startswith("instagram://"):
+                    obj[k] = v.replace("instagram://", "https://instagram.internal/")
+                else:
+                    fix_urls(v)
+        elif isinstance(obj, list):
+            for i, v in enumerate(obj):
+                if isinstance(v, str) and v.startswith("instagram://"):
+                    obj[i] = v.replace("instagram://", "https://instagram.internal/")
+                else:
+                    fix_urls(v)
+                    
+    fix_urls(res)
+    return res
+
+Client.private_request = patched_private_request
+# ---------------------------------------------------------------------------------------------
 from dotenv import load_dotenv
 
 ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
@@ -118,7 +145,7 @@ class InstagramWorker:
             try:
                 settings_dict = json.loads(session_data)
                 self.cl.set_settings(settings_dict)
-                # Bypassing timeline validation to prevent 467 block on HF IPs
+                # Bypassing timeline validation to prevent 467 block on cloud/datacenter IPs
                 self.cl.authenticated = True
                 self.status = "connected"
                 self.temp_password = ""
@@ -187,7 +214,7 @@ class InstagramWorker:
             safe_print(f"[{self.user_id}] Attempting session cookie login...")
             
             # instagrapi's login_by_sessionid does the heavy lifting of setting up the session properly,
-            # but it calls get_timeline_feed() which triggers a 467 Action Block on HuggingFace IPs.
+            # but it calls get_timeline_feed() which triggers a 467 Action Block on cloud/datacenter IPs.
             # We temporarily mock it out to bypass the block.
             original_timeline = self.cl.get_timeline_feed
             self.cl.get_timeline_feed = lambda *args, **kwargs: None
@@ -197,7 +224,7 @@ class InstagramWorker:
             finally:
                 self.cl.get_timeline_feed = original_timeline
             
-            # We bypass the direct_threads validation as well, because on Hugging Face datacenter IPs
+            # We bypass the direct_threads validation as well, because on cloud/datacenter IPs
             # any initial rapid requests immediately after injecting a cookie can trigger an IP block or hang.
             # We trust that the cookie is valid and proceed.
             self.cl.authenticated = True
