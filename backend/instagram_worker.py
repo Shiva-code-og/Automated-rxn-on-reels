@@ -170,12 +170,33 @@ class InstagramWorker:
         self.error_message = ""
         
         self.cl = Client()
+        
+        # Set realistic device settings to prevent immediate logout/suspicion
+        self.cl.set_device({
+            "app_version": "269.0.0.18.75",
+            "android_version": "26",
+            "android_release": "8.0.0",
+            "dpi": "480dpi",
+            "resolution": "1080x1920",
+            "manufacturer": "Samsung",
+            "device": "SM-G930F",
+            "model": "herolte",
+            "cpu": "samsungexynos8890",
+            "version_code": "314665256"
+        })
+        self.cl.set_user_agent()
+        self.cl.set_timezone_offset(0)
+        
         # Clear any old cached session for this user
         database.delete_instagram_session(self.user_id)
         
         try:
+            import urllib.parse
+            # URL-decode in case it was copied with %3A instead of :
+            clean_sessionid = urllib.parse.unquote(sessionid.strip())
+            
             safe_print(f"[{self.user_id}] Attempting session cookie login...")
-            self.cl.login_by_sessionid(sessionid)
+            self.cl.login_by_sessionid(clean_sessionid)
             
             # Validate the session is actually working
             self.cl.get_timeline_feed()
