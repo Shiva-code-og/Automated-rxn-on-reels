@@ -1,3 +1,13 @@
+---
+title: Insta Rxn Bot
+emoji: 🤖
+colorFrom: purple
+colorTo: red
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # AutoReact - Instagram Reels Automated Reaction Tool 🚀
 
 AutoReact is a modern, premium **Multi-Tenant SaaS** dashboard and automated worker that monitors incoming Instagram Direct Messages (DMs) for shared Reels. Multiple users can log in simultaneously to run their own isolated background workers. It analyzes content sentiment using Google Gemini AI and automatically reacts with contextually appropriate emojis.
