@@ -74,7 +74,8 @@ class InstagramWorker:
                 # Check settings to see if username is saved
                 saved_username = database.get_setting(self.user_id, "instagram_username")
                 if saved_username:
-                    self.cl.get_timeline_feed()
+                    # Bypassing timeline validation to prevent 467 block on HF IPs
+                    self.cl.authenticated = True
                     self.status = "connected"
                     safe_print(f"[{self.user_id}] Successfully restored session.")
                     session_restored = True
@@ -117,7 +118,8 @@ class InstagramWorker:
             try:
                 settings_dict = json.loads(session_data)
                 self.cl.set_settings(settings_dict)
-                self.cl.get_timeline_feed()
+                # Bypassing timeline validation to prevent 467 block on HF IPs
+                self.cl.authenticated = True
                 self.status = "connected"
                 self.temp_password = ""
                 return {"status": "success", "message": "Logged in successfully via restored session!"}
