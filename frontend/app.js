@@ -228,7 +228,14 @@ function switchLoginTab(tab) {
     // Hide both error boxes when switching tabs
     loginError.style.display = 'none';
     if (challengeHint) challengeHint.style.display = 'none';
+
+    // Scroll login card to top so tabs are visible
+    const loginCard = document.querySelector('.login-card');
+    if (loginCard) loginCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+// Expose globally so inline onclick="switchLoginTab(...)" always works
+window.switchLoginTab = switchLoginTab;
 
 // ------------------- API OPERATIONS -------------------
 
