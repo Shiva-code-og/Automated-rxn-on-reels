@@ -185,57 +185,7 @@ function initEventListeners() {
 
     // Clear Logs
     btnClearLogs.addEventListener('click', clearLogsHistory);
-
-    // Session cookie tab: toggle sessionid visibility
-    if (toggleSessionIdBtn) {
-        toggleSessionIdBtn.addEventListener('click', () => {
-            const type = sessionIdInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            sessionIdInput.setAttribute('type', type);
-            const icon = toggleSessionIdBtn.querySelector('i');
-            icon.className = type === 'password' ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash';
-        });
-    }
-
-    // Session cookie form submit
-    if (sessionForm) {
-        sessionForm.addEventListener('submit', handleSessionLogin);
-    }
 }
-
-// Switch between Password and Session Cookie login tabs
-function switchLoginTab(tab) {
-    const tabPassword = document.getElementById('tab-password');
-    const tabSession = document.getElementById('tab-session');
-    const panelPassword = document.getElementById('panel-password');
-    const panelSession = document.getElementById('panel-session');
-
-    if (tab === 'password') {
-        tabPassword.classList.add('active');
-        tabSession.classList.remove('active');
-        panelPassword.classList.add('active');
-        panelSession.classList.remove('active');
-    } else {
-        tabSession.classList.add('active');
-        tabPassword.classList.remove('active');
-        panelSession.classList.add('active');
-        panelPassword.classList.remove('active');
-        // Pre-fill username from password tab if available
-        if (usernameInput.value.trim() && !sessionUsernameInput.value.trim()) {
-            sessionUsernameInput.value = usernameInput.value.trim();
-        }
-    }
-
-    // Hide both error boxes when switching tabs
-    loginError.style.display = 'none';
-    if (challengeHint) challengeHint.style.display = 'none';
-
-    // Scroll login card to top so tabs are visible
-    const loginCard = document.querySelector('.login-card');
-    if (loginCard) loginCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-// Expose globally so inline onclick="switchLoginTab(...)" always works
-window.switchLoginTab = switchLoginTab;
 
 // ------------------- API OPERATIONS -------------------
 

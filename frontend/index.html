@@ -33,18 +33,7 @@
                     <p>Reels Automator</p>
                 </div>
 
-                <!-- Login Method Tabs -->
-                <div class="login-tabs">
-                    <button class="login-tab active" id="tab-password" onclick="switchLoginTab('password')">
-                        <i class="fa-regular fa-key"></i> Password
-                    </button>
-                    <button class="login-tab" id="tab-session" onclick="switchLoginTab('session')">
-                        <i class="fa-solid fa-cookie-bite"></i> Session Cookie
-                        <span class="tab-badge">Bypass Block</span>
-                    </button>
-                </div>
-
-                <!-- Tab: Password Login -->
+                <!-- Login Panel -->
                 <div id="panel-password" class="login-panel active">
                     <form id="login-form">
                         <div class="form-group">
@@ -60,82 +49,15 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="login-warning">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span>Instagram may block automated logins. If this fails, use the <strong>Session Cookie</strong> tab.</span>
-                        </div>
                         <button type="submit" id="login-btn" class="btn btn-primary btn-block">
                             <span class="btn-text">Connect Account</span>
                             <div class="spinner"></div>
                         </button>
                     </form>
                 </div>
-
-                <!-- Tab: Session Cookie Login -->
-                <div id="panel-session" class="login-panel">
-                    <div class="session-steps">
-                        <p class="session-intro">Log into <a href="https://www.instagram.com" target="_blank">instagram.com</a> in your browser, then follow these steps:</p>
-
-                        <div class="step-list">
-                            <div class="step-item">
-                                <div class="step-num">1</div>
-                                <div class="step-body">
-                                    <strong>Open DevTools</strong>
-                                    <span>Press <kbd>F12</kbd> (or right-click → Inspect)</span>
-                                </div>
-                            </div>
-                            <div class="step-item">
-                                <div class="step-num">2</div>
-                                <div class="step-body">
-                                    <strong>Go to Application tab</strong>
-                                    <span>Click <kbd>Application</kbd> → <kbd>Cookies</kbd> → <kbd>instagram.com</kbd></span>
-                                </div>
-                            </div>
-                            <div class="step-item">
-                                <div class="step-num">3</div>
-                                <div class="step-body">
-                                    <strong>Find <code>sessionid</code></strong>
-                                    <span>Copy its full value and paste it below</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <form id="session-form">
-                        <div class="form-group">
-                            <label for="session-username"><i class="fa-regular fa-user"></i> Your Instagram Username</label>
-                            <input type="text" id="session-username" placeholder="e.g. your_username" autocomplete="username">
-                        </div>
-                        <div class="form-group">
-                            <label for="sessionid"><i class="fa-solid fa-cookie-bite"></i> Session ID Cookie</label>
-                            <div class="password-wrapper">
-                                <input type="password" id="sessionid" placeholder="Paste your sessionid value here…">
-                                <button type="button" id="toggle-sessionid" class="password-toggle">
-                                    <i class="fa-regular fa-eye"></i>
-                                </button>
-                            </div>
-                            <p class="input-help">Looks like: <code>60123456789%3A...</code></p>
-                        </div>
-                        <button type="submit" id="session-btn" class="btn btn-primary btn-block">
-                            <span class="btn-text"><i class="fa-solid fa-plug"></i> Connect via Cookie</span>
-                            <div class="spinner"></div>
-                        </button>
-                    </form>
-                </div>
-
                 <div id="login-error" class="error-box">
                     <i class="fa-solid fa-circle-xmark"></i>
                     <span id="error-message">Invalid credentials, please try again.</span>
-                </div>
-                <div id="challenge-hint" class="challenge-hint" style="display:none;">
-                    <i class="fa-solid fa-shield-halved"></i>
-                    <div>
-                        <strong>Instagram blocked this login.</strong>
-                        <span>Use the Session Cookie method to bypass it in 30 seconds — no password needed.</span>
-                        <button id="go-to-session-tab" class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="switchLoginTab('session')">
-                            <i class="fa-solid fa-cookie-bite"></i> Switch to Session Cookie
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>

@@ -11,7 +11,6 @@ AutoReact is a modern, premium web-based dashboard and automated background work
 - **🛡️ Secure API Key Management:** Users configure their own Gemini API keys via the dashboard. Keys are securely stored in a local SQLite database and masked in the UI (`••••••••`).
 - **🎨 Premium Glassmorphism Dashboard:** Responsive, beautifully designed dark-mode web interface to connect your Instagram account, track worker status, view real-time reaction logs, and adjust settings.
 - **🎯 Targeted Reactions (Friend Selector):** Dynamically fetches your recent chat partners from DMs into an interactive, clickable grid so you can selectively target only specific friends for automated reactions.
-- **🔐 Session Cookie Login:** Easily bypass Instagram verification challenges by securely logging in using your browser's existing `sessionid` cookie.
 - **⚡ Smart Fallback:** If Gemini is disabled or the API key is not configured, the system automatically falls back to an advanced local keyword-based sentiment analyzer.
 - **🔕 Quiet Terminal Logging:** Configured to prevent uvicorn access log spamming, so you only see actual Reel checks and reaction events in the console.
 
@@ -71,7 +70,7 @@ Make sure you have **Python 3.10+** installed on your system.
 ## ⚙️ Configuration & Usage
 
 1. **Connect Instagram:**
-   * Enter your Instagram credentials on the dashboard login screen, OR log in securely using your `sessionid` cookie to bypass verification prompts.
+   * Enter your Instagram credentials on the dashboard login screen.
    * *Note: AutoReact saves your login session securely into the local database to prevent repeated logins.*
 
 2. **Configure Gemini AI:**
