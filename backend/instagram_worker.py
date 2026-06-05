@@ -181,13 +181,18 @@ class InstagramWorker:
             
             safe_print(f"[{self.user_id}] Attempting session cookie login...")
             
-            # Instead of login_by_sessionid (which calls get_timeline_feed and user_info which are heavily blocked on datacenter IPs),
-            # we manually set the cookie and test the DM endpoint directly.
-            self.cl.cookie_jar.set("sessionid", clean_sessionid, domain=".instagram.com")
-            self.cl.user_id = clean_sessionid.split(":")[0]
-            self.cl.authenticated = True
+            # instagrapi's login_by_sessionid does the heavy lifting of setting up the session properly,
+            # but it calls get_timeline_feed() which triggers a 467 Action Block on HuggingFace IPs.
+            # We temporarily mock it out to bypass the block.
+            original_timeline = self.cl.get_timeline_feed
+            self.cl.get_timeline_feed = lambda *args, **kwargs: None
             
-            # Validate the session by fetching 1 DM thread instead of the timeline
+            try:
+                self.cl.login_by_sessionid(clean_sessionid)
+            finally:
+                self.cl.get_timeline_feed = original_timeline
+            
+            # Validate the session by fetching 1 DM thread instead (less likely to be blocked)
             self.cl.direct_threads(1)
 
             
