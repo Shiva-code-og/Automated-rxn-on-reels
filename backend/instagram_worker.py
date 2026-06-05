@@ -171,6 +171,9 @@ class InstagramWorker:
         
         self.cl = Client()
         
+        # Add strict timeouts to prevent infinite hanging on HuggingFace Datacenter IPs
+        self.cl.request_timeout = 7
+        
         # Clear any old cached session for this user
         database.delete_instagram_session(self.user_id)
         
@@ -192,8 +195,10 @@ class InstagramWorker:
             finally:
                 self.cl.get_timeline_feed = original_timeline
             
-            # Validate the session by fetching 1 DM thread instead (less likely to be blocked)
-            self.cl.direct_threads(1)
+            # We bypass the direct_threads validation as well, because on Hugging Face datacenter IPs
+            # any initial rapid requests immediately after injecting a cookie can trigger an IP block or hang.
+            # We trust that the cookie is valid and proceed.
+            self.cl.authenticated = True
 
             
             self.save_session_to_db()
