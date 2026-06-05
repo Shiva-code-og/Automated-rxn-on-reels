@@ -199,7 +199,7 @@ body {
 /* 1. LOGIN SCREEN STYLING */
 .login-card {
     width: 100%;
-    max-width: 440px;
+    max-width: 480px;
     background: var(--bg-card);
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
@@ -1274,3 +1274,217 @@ input:checked + .switch-sm .slider:before {
     text-align: center;
 }
 
+/* -------------------------------------------------------
+   LOGIN TABS — Password / Session Cookie switcher
+------------------------------------------------------- */
+.login-tabs {
+    display: flex;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 24px;
+    gap: 4px;
+}
+
+.login-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 500;
+    padding: 10px 12px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    position: relative;
+}
+
+.login-tab:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.login-tab.active {
+    background: var(--primary-grad);
+    color: white;
+    box-shadow: 0 2px 12px rgba(214, 41, 118, 0.35);
+}
+
+.tab-badge {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Login panels (tab content) */
+.login-panel {
+    display: none;
+    animation: fadeIn 0.25s ease-out forwards;
+}
+
+.login-panel.active {
+    display: block;
+}
+
+/* -------------------------------------------------------
+   SESSION COOKIE — Step guide
+------------------------------------------------------- */
+.session-steps {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.session-intro {
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    line-height: 1.45;
+}
+
+.session-intro a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.session-intro a:hover {
+    text-decoration: underline;
+}
+
+.step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.step-num {
+    min-width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--primary-grad);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 2px 8px rgba(214, 41, 118, 0.3);
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.step-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.step-body strong {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.step-body span {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+kbd {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.72rem;
+    font-family: monospace;
+    color: var(--text-main);
+}
+
+.input-help code {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+
+/* -------------------------------------------------------
+   CHALLENGE HINT BANNER — shown when Instagram blocks login
+------------------------------------------------------- */
+.challenge-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(131, 58, 180, 0.1);
+    border: 1px solid rgba(131, 58, 180, 0.35);
+    border-radius: var(--radius-sm);
+    padding: 13px 14px;
+    margin-top: 16px;
+    font-size: 0.84rem;
+    animation: fadeIn 0.3s ease-out, shake 0.3s ease-in-out;
+}
+
+.challenge-hint > i {
+    color: #a855f7;
+    font-size: 1.1rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.challenge-hint > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    line-height: 1.4;
+}
+
+.challenge-hint strong {
+    color: #c084fc;
+    font-size: 0.88rem;
+}
+
+.challenge-hint span {
+    color: var(--text-muted);
+}
+
+/* Inline clickable link that looks like a button */
+.inline-link {
+    background: none;
+    border: none;
+    color: #a855f7;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    padding: 0;
+}
+
+.inline-link:hover {
+    color: #c084fc;
+}

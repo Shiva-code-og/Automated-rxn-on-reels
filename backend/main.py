@@ -57,6 +57,10 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+class SessionLoginRequest(BaseModel):
+    username: str
+    sessionid: str
+
 class TwoFactorRequest(BaseModel):
     code: str
     username: str # Pass username to link the 2FA flow
@@ -97,6 +101,29 @@ def login(data: LoginRequest, background_tasks: BackgroundTasks):
     
     worker = worker_manager.get_worker(user_id)
     res = worker.login(data.username, data.password)
+    
+    if res["status"] == "error":
+        raise HTTPException(status_code=400, detail=res["message"])
+    
+    if res["status"] == "challenge_required":
+        raise HTTPException(status_code=428, detail=res["message"])
+        
+    if res["status"] == "success":
+        access_token_expires = timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+        access_token = create_access_token(
+            data={"sub": user_id}, expires_delta=access_token_expires
+        )
+        res["token"] = access_token
+        
+    return res
+
+@app.post("/api/login/session")
+def login_with_session(data: SessionLoginRequest):
+    user_id = data.username.lower()
+    print(f"[{user_id}] API Session Login: Attempting session cookie connection...")
+    
+    worker = worker_manager.get_worker(user_id)
+    res = worker.login_with_sessionid(data.username, data.sessionid.strip())
     
     if res["status"] == "error":
         raise HTTPException(status_code=400, detail=res["message"])

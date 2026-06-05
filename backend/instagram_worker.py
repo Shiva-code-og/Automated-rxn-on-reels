@@ -7,7 +7,13 @@ import sys
 import json
 from datetime import datetime, timezone
 from instagrapi import Client
-from instagrapi.exceptions import TwoFactorRequired, LoginRequired, ChallengeRequired
+from instagrapi.exceptions import (
+    TwoFactorRequired, 
+    LoginRequired, 
+    ChallengeRequired,
+    ChallengeUnknownStep,
+    ChallengeError
+)
 from dotenv import load_dotenv
 
 ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
@@ -139,17 +145,65 @@ class InstagramWorker:
             self.status = "2fa_needed"
             return {"status": "2fa_needed", "message": "Two-factor authentication code required."}
             
-        except ChallengeRequired as e:
+        except (ChallengeRequired, ChallengeUnknownStep, ChallengeError) as e:
             safe_print(f"[{self.user_id}] Challenge checkpoint required by Instagram.")
             self.status = "error"
-            self.error_message = "Instagram requires a security check. Please log in from your phone app first, resolve the challenge, and try again."
-            return {"status": "error", "message": self.error_message}
+            self.error_message = "challenge_required"
+            return {"status": "challenge_required", "message": "Instagram blocked the login attempt. Use the Session Cookie method instead — it takes 30 seconds and bypasses this entirely."}
             
         except Exception as e:
+            error_str = str(e)
+            if "Challenge" in error_str or e.__class__.__name__.startswith("Challenge"):
+                safe_print(f"[{self.user_id}] Unresolved Challenge checkpoint: {e.__class__.__name__}")
+                self.status = "error"
+                self.error_message = "challenge_required"
+                return {"status": "challenge_required", "message": "Instagram blocked the login attempt. Use the Session Cookie method instead — it takes 30 seconds and bypasses this entirely."}
+                
             safe_print(f"[{self.user_id}] Login failed: {e}")
             self.status = "error"
-            self.error_message = str(e)
-            return {"status": "error", "message": str(e)}
+            self.error_message = error_str
+            return {"status": "error", "message": error_str}
+
+    def login_with_sessionid(self, username, sessionid):
+        """Login using a browser sessionid cookie — bypasses all challenge/bot detection."""
+        self.status = "logging_in"
+        self.error_message = ""
+        
+        self.cl = Client()
+        # Clear any old cached session for this user
+        database.delete_instagram_session(self.user_id)
+        
+        try:
+            safe_print(f"[{self.user_id}] Attempting session cookie login...")
+            self.cl.login_by_sessionid(sessionid)
+            
+            # Validate the session is actually working
+            self.cl.get_timeline_feed()
+            
+            self.save_session_to_db()
+            self.status = "connected"
+            
+            database.save_setting(self.user_id, "instagram_username", username)
+            # Don't save the sessionid as password — it expires
+            database.save_setting(self.user_id, "instagram_password", "")
+            
+            safe_print(f"[{self.user_id}] Session cookie login successful!")
+            
+            if database.get_setting(self.user_id, "is_running", "false") == "true":
+                self.start_monitoring()
+                
+            return {"status": "success", "message": "Logged in successfully via session cookie!"}
+            
+        except Exception as e:
+            error_str = str(e)
+            safe_print(f"[{self.user_id}] Session cookie login failed: {error_str}")
+            self.status = "error"
+            self.error_message = error_str
+            
+            if "login" in error_str.lower() or "session" in error_str.lower() or "cookie" in error_str.lower():
+                return {"status": "error", "message": "Invalid or expired session cookie. Please copy a fresh sessionid from your browser (logged-in instagram.com)."}
+            
+            return {"status": "error", "message": f"Session login failed: {error_str}"}
 
     def login_2fa(self, code):
         if self.status != "2fa_needed":

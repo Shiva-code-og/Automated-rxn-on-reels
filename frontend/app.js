@@ -89,6 +89,14 @@ const logListContainer = document.getElementById('log-list-container');
 const totalReactedBadge = document.getElementById('total-reacted-badge');
 const btnClearLogs = document.getElementById('btn-clear-logs');
 
+// Session cookie login elements
+const sessionForm = document.getElementById('session-form');
+const sessionUsernameInput = document.getElementById('session-username');
+const sessionIdInput = document.getElementById('sessionid');
+const sessionBtn = document.getElementById('session-btn');
+const toggleSessionIdBtn = document.getElementById('toggle-sessionid');
+const challengeHint = document.getElementById('challenge-hint');
+
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
@@ -177,6 +185,49 @@ function initEventListeners() {
 
     // Clear Logs
     btnClearLogs.addEventListener('click', clearLogsHistory);
+
+    // Session cookie tab: toggle sessionid visibility
+    if (toggleSessionIdBtn) {
+        toggleSessionIdBtn.addEventListener('click', () => {
+            const type = sessionIdInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            sessionIdInput.setAttribute('type', type);
+            const icon = toggleSessionIdBtn.querySelector('i');
+            icon.className = type === 'password' ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash';
+        });
+    }
+
+    // Session cookie form submit
+    if (sessionForm) {
+        sessionForm.addEventListener('submit', handleSessionLogin);
+    }
+}
+
+// Switch between Password and Session Cookie login tabs
+function switchLoginTab(tab) {
+    const tabPassword = document.getElementById('tab-password');
+    const tabSession = document.getElementById('tab-session');
+    const panelPassword = document.getElementById('panel-password');
+    const panelSession = document.getElementById('panel-session');
+
+    if (tab === 'password') {
+        tabPassword.classList.add('active');
+        tabSession.classList.remove('active');
+        panelPassword.classList.add('active');
+        panelSession.classList.remove('active');
+    } else {
+        tabSession.classList.add('active');
+        tabPassword.classList.remove('active');
+        panelSession.classList.add('active');
+        panelPassword.classList.remove('active');
+        // Pre-fill username from password tab if available
+        if (usernameInput.value.trim() && !sessionUsernameInput.value.trim()) {
+            sessionUsernameInput.value = usernameInput.value.trim();
+        }
+    }
+
+    // Hide both error boxes when switching tabs
+    loginError.style.display = 'none';
+    if (challengeHint) challengeHint.style.display = 'none';
 }
 
 // ------------------- API OPERATIONS -------------------
@@ -255,6 +306,7 @@ async function handleLogin(e) {
     loginBtn.classList.add('loading');
     loginBtn.disabled = true;
     loginError.style.display = 'none';
+    if (challengeHint) challengeHint.style.display = 'none';
     
     const payload = {
         username: usernameInput.value.trim(),
@@ -270,6 +322,14 @@ async function handleLogin(e) {
         
         const data = await res.json();
         
+        if (res.status === 428) {
+            // Challenge required — guide user to session cookie tab
+            if (challengeHint) {
+                challengeHint.style.display = 'flex';
+            }
+            return;
+        }
+        
         if (!res.ok) {
             throw new Error(data.detail || "Authentication failed.");
         }
@@ -282,6 +342,7 @@ async function handleLogin(e) {
             localStorage.setItem('auto_react_token', data.token);
             appState.status = 'connected';
             appState.username = payload.username;
+            updateUIState();
             fetchConfig().then(() => fetchFriends());
             fetchLogs();
         }
@@ -291,6 +352,55 @@ async function handleLogin(e) {
     } finally {
         loginBtn.classList.remove('loading');
         loginBtn.disabled = false;
+    }
+}
+
+// Handle Session Cookie login form submission
+async function handleSessionLogin(e) {
+    e.preventDefault();
+    sessionBtn.classList.add('loading');
+    sessionBtn.disabled = true;
+    loginError.style.display = 'none';
+    if (challengeHint) challengeHint.style.display = 'none';
+    
+    const payload = {
+        username: sessionUsernameInput.value.trim(),
+        sessionid: sessionIdInput.value.trim()
+    };
+    
+    if (!payload.username || !payload.sessionid) {
+        errorMessage.textContent = 'Please fill in both your username and the session cookie.';
+        loginError.style.display = 'flex';
+        sessionBtn.classList.remove('loading');
+        sessionBtn.disabled = false;
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/login/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+            throw new Error(data.detail || 'Session cookie login failed.');
+        }
+        
+        localStorage.setItem('auto_react_token', data.token);
+        appState.status = 'connected';
+        appState.username = payload.username;
+        updateUIState();
+        fetchConfig().then(() => fetchFriends());
+        fetchLogs();
+    } catch (err) {
+        errorMessage.textContent = err.message;
+        loginError.style.display = 'flex';
+    } finally {
+        sessionBtn.classList.remove('loading');
+        sessionBtn.disabled = false;
     }
 }
 
